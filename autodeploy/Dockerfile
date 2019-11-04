@@ -1,6 +1,6 @@
 FROM debian:latest as builder
 
-MAINTAINER cppla https://cpp.la
+MAINTAINER srbjor fan_xq@live.com
 
 RUN apt-get update \
  && apt-get -y install gcc g++ make git\
