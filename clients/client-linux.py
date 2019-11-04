@@ -9,14 +9,15 @@
 SERVER = "127.0.0.1"
 USER = "s01"
 
-
 PORT = 35601
-PASSWORD = "USER_DEFAULT_PASSWORD"
+PASSWORD = "AC045BE68B1D012390F96884EBC1AA64"
 INTERVAL = 1
 PORBEPORT = 80
-CU = "cu.tz.cloudcpp.com"
-CT = "ct.tz.cloudcpp.com"
-CM = "cm.tz.cloudcpp.com"
+
+# 替换连接检测私有网址为官方网址
+CU = "www.10010.com"
+CT = "www.189.cn"
+CM = "www.10086.cn"
 
 import socket
 import time
@@ -29,6 +30,7 @@ import subprocess
 import collections
 import threading
 
+
 def get_uptime():
     f = open('/proc/uptime', 'r')
     uptime = f.readline()
@@ -36,6 +38,7 @@ def get_uptime():
     uptime = uptime.split('.', 2)
     time = int(uptime[0])
     return int(time)
+
 
 def get_memory():
     re_parser = re.compile(r'^(?P<key>\S*):\s*(?P<value>\d*)\s*kB')
@@ -47,49 +50,61 @@ def get_memory():
         key, value = match.groups(['key', 'value'])
         result[key] = int(value)
     MemTotal = float(result['MemTotal'])
-    MemUsed = MemTotal-float(result['MemFree'])-float(result['Buffers'])-float(result['Cached'])-float(result['SReclaimable'])
+    MemUsed = MemTotal - float(result['MemFree']) - float(result['Buffers']) - float(result['Cached']) - float(
+        result['SReclaimable'])
     SwapTotal = float(result['SwapTotal'])
     SwapFree = float(result['SwapFree'])
     return int(MemTotal), int(MemUsed), int(SwapTotal), int(SwapFree)
 
+
 def get_hdd():
-    p = subprocess.check_output(['df', '-Tlm', '--total', '-t', 'ext4', '-t', 'ext3', '-t', 'ext2', '-t', 'reiserfs', '-t', 'jfs', '-t', 'ntfs', '-t', 'fat32', '-t', 'btrfs', '-t', 'fuseblk', '-t', 'zfs', '-t', 'simfs', '-t', 'xfs']).decode("Utf-8")
+    p = subprocess.check_output(
+        ['df', '-Tlm', '--total', '-t', 'ext4', '-t', 'ext3', '-t', 'ext2', '-t', 'reiserfs', '-t', 'jfs', '-t', 'ntfs',
+         '-t', 'fat32', '-t', 'btrfs', '-t', 'fuseblk', '-t', 'zfs', '-t', 'simfs', '-t', 'xfs']).decode("Utf-8")
     total = p.splitlines()[-1]
     used = total.split()[3]
     size = total.split()[2]
     return int(size), int(used)
 
+
 def get_time():
     stat_file = open("/proc/stat", "r")
     time_list = stat_file.readline().split(' ')[2:6]
     stat_file.close()
-    for i in range(len(time_list))  :
+    for i in range(len(time_list)):
         time_list[i] = int(time_list[i])
     return time_list
+
+
 def delta_time():
     x = get_time()
     time.sleep(INTERVAL)
     y = get_time()
     for i in range(len(x)):
-        y[i]-=x[i]
+        y[i] -= x[i]
     return y
+
+
 def get_cpu():
     t = delta_time()
     st = sum(t)
     if st == 0:
         st = 1
-    result = 100-(t[len(t)-1]*100.00/st)
+    result = 100 - (t[len(t) - 1] * 100.00 / st)
     return round(result)
+
 
 class Traffic:
     def __init__(self):
         self.rx = collections.deque(maxlen=10)
         self.tx = collections.deque(maxlen=10)
+
     def get(self):
         f = open('/proc/net/dev', 'r')
         net_dev = f.readlines()
         f.close()
-        avgrx = 0; avgtx = 0
+        avgrx = 0;
+        avgtx = 0
 
         for dev in net_dev[2:]:
             dev = dev.split(':')
@@ -104,35 +119,40 @@ class Traffic:
 
         self.rx.append(avgrx)
         self.tx.append(avgtx)
-        avgrx = 0; avgtx = 0
+        avgrx = 0;
+        avgtx = 0
 
         l = len(self.rx)
         for x in range(l - 1):
-            avgrx += self.rx[x+1] - self.rx[x]
-            avgtx += self.tx[x+1] - self.tx[x]
+            avgrx += self.rx[x + 1] - self.rx[x]
+            avgtx += self.tx[x + 1] - self.tx[x]
 
         avgrx = int(avgrx / l / INTERVAL)
         avgtx = int(avgtx / l / INTERVAL)
 
         return avgrx, avgtx
 
+
 def liuliang():
     NET_IN = 0
     NET_OUT = 0
     with open('/proc/net/dev') as f:
         for line in f.readlines():
-            netinfo = re.findall('([^\s]+):[\s]{0,}(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)', line)
+            netinfo = re.findall(
+                '([^\s]+):[\s]{0,}(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)',
+                line)
             if netinfo:
                 if netinfo[0][0] == 'lo' or 'tun' in netinfo[0][0] \
                         or 'docker' in netinfo[0][0] or 'veth' in netinfo[0][0] \
                         or 'br-' in netinfo[0][0] or 'vmbr' in netinfo[0][0] \
                         or 'vnet' in netinfo[0][0] or 'kube' in netinfo[0][0] \
-                        or netinfo[0][1]=='0' or netinfo[0][9]=='0':
+                        or netinfo[0][1] == '0' or netinfo[0][9] == '0':
                     continue
                 else:
                     NET_IN += int(netinfo[0][1])
                     NET_OUT += int(netinfo[0][9])
     return NET_IN, NET_OUT
+
 
 def tupd():
     '''
@@ -140,14 +160,15 @@ def tupd():
     :return:
     '''
     s = subprocess.check_output("ss -t|wc -l", shell=True)
-    t = int(s[:-1])-1
+    t = int(s[:-1]) - 1
     s = subprocess.check_output("ss -u|wc -l", shell=True)
-    u = int(s[:-1])-1
+    u = int(s[:-1]) - 1
     s = subprocess.check_output("ps -ef|wc -l", shell=True)
-    p = int(s[:-1])-2
+    p = int(s[:-1]) - 2
     s = subprocess.check_output("ps -xH|wc -l", shell=True)
-    d = int(s[:-1])-2
-    return t,u,p,d
+    d = int(s[:-1]) - 2
+    return t, u, p, d
+
 
 def ip_status():
     ip_check = 0
@@ -165,10 +186,11 @@ def ip_status():
     else:
         return True
 
+
 def get_network(ip_version):
-    if(ip_version == 4):
+    if (ip_version == 4):
         HOST = "ipv4.google.com"
-    elif(ip_version == 6):
+    elif (ip_version == 6):
         HOST = "ipv6.google.com"
     try:
         s = socket.create_connection((HOST, 80), 2)
@@ -176,6 +198,7 @@ def get_network(ip_version):
         return True
     except:
         return False
+
 
 lostRate = {
     '10010': 0.0,
@@ -187,6 +210,8 @@ pingTime = {
     '189': 0,
     '10086': 0
 }
+
+
 def _ping_thread(host, mark, port):
     lostPacket = 0
     allPacket = 0
@@ -198,7 +223,7 @@ def _ping_thread(host, mark, port):
         try:
             b = timeit.default_timer()
             s.connect((host, port))
-            pingTime[mark] = int((timeit.default_timer()-b)*1000)
+            pingTime[mark] = int((timeit.default_timer() - b) * 1000)
         except:
             lostPacket += 1
         finally:
@@ -215,6 +240,7 @@ def _ping_thread(host, mark, port):
             startTime = endTime
 
         time.sleep(1)
+
 
 def get_packetLostRate():
     t1 = threading.Thread(
@@ -247,6 +273,7 @@ def get_packetLostRate():
     t1.start()
     t2.start()
     t3.start()
+
 
 if __name__ == '__main__':
     for argc in sys.argv:
@@ -309,7 +336,7 @@ if __name__ == '__main__':
                     array['online' + str(check_ip)] = get_network(check_ip)
                     timer = 10
                 else:
-                    timer -= 1*INTERVAL
+                    timer -= 1 * INTERVAL
 
                 array['uptime'] = Uptime
                 array['load_1'] = Load_1

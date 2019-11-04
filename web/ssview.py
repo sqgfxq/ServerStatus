@@ -17,6 +17,7 @@ from prettytable import PrettyTable
 scroll = True
 clear = lambda: os.system('clear' if 'linux' in sys.platform else 'cls')
 
+
 def sscmd(address):
     while True:
         r = requests.get(
@@ -53,7 +54,7 @@ def sscmd(address):
                     "%s" % (i["load_1"]),
                     "%.2fM|%.2fM" % (float(i["network_rx"]) / 1000 / 1000, float(i["network_tx"]) / 1000 / 1000),
                     "%.2fG|%.2fG" % (
-                    float(i["network_in"]) / 1024 / 1024 / 1024, float(i["network_out"]) / 1024 / 1024 / 1024),
+                        float(i["network_in"]) / 1024 / 1024 / 1024, float(i["network_out"]) / 1024 / 1024 / 1024),
                     "%d%%" % (i["cpu"]),
                     "%d%%" % (float(i["memory_used"]) / i["memory_total"] * 100),
                     "%d%%" % (float(i["hdd_used"]) / i["hdd_total"] * 100),
@@ -64,7 +65,9 @@ def sscmd(address):
         print(ss)
         time.sleep(1)
 
+
 if __name__ == '__main__':
-    default = 'https://tz.cloudcpp.com/json/stats.json'
-    ads = sys.argv[1] if len(sys.argv)==2 else default
+    default = 'http://127.0.0.1/json/stats.json'
+    # default = 'https://tz.cloudcpp.com/json/stats.json'
+    ads = sys.argv[1] if len(sys.argv) == 2 else default
     sscmd(ads)

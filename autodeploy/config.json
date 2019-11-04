@@ -6,7 +6,7 @@
 			"type": "xen",
 			"host": "host1",
 			"location": "cn",
-			"password": "USER_DEFAULT_PASSWORD"
+			"password": "AC045BE68B1D012390F96884EBC1AA64"
 		},
 		{
 			"username": "s02",
@@ -14,7 +14,7 @@
 			"type": "vmware",
 			"host": "host2",
 			"location": "jp",
-			"password": "USER_DEFAULT_PASSWORD"
+			"password": "AC045BE68B1D012390F96884EBC1AA64"
 		},
 		{
 			"disabled": true,
@@ -23,7 +23,7 @@
 			"type": "Nothing",
 			"host": "host3",
 			"location": "fr",
-			"password": "USER_DEFAULT_PASSWORD"
+			"password": "AC045BE68B1D012390F96884EBC1AA64"
 		},
 		{
 			"username": "s04",
@@ -31,7 +31,7 @@
 			"type": "ssss",
 			"host": "ssss",
 			"location": "ssss",
-			"password": "USER_DEFAULT_PASSWORD"
+			"password": "AC045BE68B1D012390F96884EBC1AA64"
 		}
 	]
 }
