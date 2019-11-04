@@ -11,14 +11,14 @@
 SERVER = "127.0.0.1"
 USER = "s01"
 
-
 PORT = 35601
 PASSWORD = "AC045BE68B1D012390F96884EBC1AA64"
 INTERVAL = 1
 PORBEPORT = 80
-CU = "cu.tz.cloudcpp.com"
-CT = "ct.tz.cloudcpp.com"
-CM = "cm.tz.cloudcpp.com"
+# 替换连接检测私有网址为官方网址
+CU = "www.10010.com"
+CT = "www.189.cn"
+CM = "www.10086.cn"
 
 import socket
 import time
@@ -30,19 +30,24 @@ import psutil
 import sys
 import threading
 
+
 def get_uptime():
     return int(time.time() - psutil.boot_time())
+
 
 def get_memory():
     Mem = psutil.virtual_memory()
     return int(Mem.total / 1024.0), int(Mem.used / 1024.0)
 
+
 def get_swap():
     Mem = psutil.swap_memory()
-    return int(Mem.total/1024.0), int(Mem.used/1024.0)
+    return int(Mem.total / 1024.0), int(Mem.used / 1024.0)
+
 
 def get_hdd():
-    valid_fs = [ "ext4", "ext3", "ext2", "reiserfs", "jfs", "btrfs", "fuseblk", "zfs", "simfs", "ntfs", "fat32", "exfat", "xfs" ]
+    valid_fs = ["ext4", "ext3", "ext2", "reiserfs", "jfs", "btrfs", "fuseblk", "zfs", "simfs", "ntfs", "fat32", "exfat",
+                "xfs"]
     disks = dict()
     size = 0
     used = 0
@@ -53,39 +58,45 @@ def get_hdd():
         usage = psutil.disk_usage(disk)
         size += usage.total
         used += usage.used
-    return int(size/1024.0/1024.0), int(used/1024.0/1024.0)
+    return int(size / 1024.0 / 1024.0), int(used / 1024.0 / 1024.0)
+
 
 def get_cpu():
     return psutil.cpu_percent(interval=INTERVAL)
+
 
 class Traffic:
     def __init__(self):
         self.rx = collections.deque(maxlen=10)
         self.tx = collections.deque(maxlen=10)
+
     def get(self):
-        avgrx = 0; avgtx = 0
+        avgrx = 0;
+        avgtx = 0
         for name, stats in psutil.net_io_counters(pernic=True).iteritems():
             if "lo" in name or "tun" in name \
-                or "docker" in name or "veth" in name \
-                or "br-" in name or "vmbr" in name \
-                or "vnet" in name or "kube" in name:
+                    or "docker" in name or "veth" in name \
+                    or "br-" in name or "vmbr" in name \
+                    or "vnet" in name or "kube" in name:
                 continue
             avgrx += stats.bytes_recv
             avgtx += stats.bytes_sent
 
         self.rx.append(avgrx)
         self.tx.append(avgtx)
-        avgrx = 0; avgtx = 0
+        avgrx = 0;
+        avgtx = 0
 
         l = len(self.rx)
         for x in range(l - 1):
-            avgrx += self.rx[x+1] - self.rx[x]
-            avgtx += self.tx[x+1] - self.tx[x]
+            avgrx += self.rx[x + 1] - self.rx[x]
+            avgtx += self.tx[x + 1] - self.tx[x]
 
         avgrx = int(avgrx / l / INTERVAL)
         avgtx = int(avgtx / l / INTERVAL)
 
         return avgrx, avgtx
+
 
 def liuliang():
     NET_IN = 0
@@ -102,24 +113,26 @@ def liuliang():
             NET_OUT += v[0]
     return NET_IN, NET_OUT
 
+
 def tupd():
     '''
     tcp, udp, process, thread count: for view ddcc attack , then send warning
     :return:
     '''
     if 'linux' in sys.platform:
-        t = int(os.popen('ss -t|wc -l').read()[:-1])-1
-        u = int(os.popen('ss -u|wc -l').read()[:-1])-1
-        p = int(os.popen('ps -ef|wc -l').read()[:-1])-2
-        d = int(os.popen('ps -xH|wc -l').read()[:-1])-2
+        t = int(os.popen('ss -t|wc -l').read()[:-1]) - 1
+        u = int(os.popen('ss -u|wc -l').read()[:-1]) - 1
+        p = int(os.popen('ps -ef|wc -l').read()[:-1]) - 2
+        d = int(os.popen('ps -xH|wc -l').read()[:-1]) - 2
     else:
-        t = int(os.popen('netstat -an|find "TCP" /c').read()[:-1])-1
-        u = int(os.popen('netstat -an|find "UDP" /c').read()[:-1])-1
+        t = int(os.popen('netstat -an|find "TCP" /c').read()[:-1]) - 1
+        u = int(os.popen('netstat -an|find "UDP" /c').read()[:-1]) - 1
         p = len(psutil.pids())
         d = 0
         # cpu is high, default: 0
         # d = sum([psutil.Process(k).num_threads() for k in [x for x in psutil.pids()]])
-    return t,u,p,d
+    return t, u, p, d
+
 
 def ip_status():
     ip_check = 0
@@ -137,10 +150,11 @@ def ip_status():
     else:
         return True
 
+
 def get_network(ip_version):
-    if(ip_version == 4):
+    if (ip_version == 4):
         HOST = "ipv4.google.com"
-    elif(ip_version == 6):
+    elif (ip_version == 6):
         HOST = "ipv6.google.com"
     try:
         s = socket.create_connection((HOST, 80), 2)
@@ -148,6 +162,7 @@ def get_network(ip_version):
         return True
     except:
         return False
+
 
 lostRate = {
     '10010': 0.0,
@@ -159,6 +174,8 @@ pingTime = {
     '189': 0,
     '10086': 0
 }
+
+
 def _ping_thread(host, mark, port):
     lostPacket = 0
     allPacket = 0
@@ -187,6 +204,7 @@ def _ping_thread(host, mark, port):
             startTime = endTime
 
         time.sleep(1)
+
 
 def get_packetLostRate():
     t1 = threading.Thread(
@@ -219,6 +237,7 @@ def get_packetLostRate():
     t1.start()
     t2.start()
     t3.start()
+
 
 if __name__ == '__main__':
     for argc in sys.argv:
@@ -282,7 +301,7 @@ if __name__ == '__main__':
                     array['online' + str(check_ip)] = get_network(check_ip)
                     timer = 10
                 else:
-                    timer -= 1*INTERVAL
+                    timer -= 1 * INTERVAL
 
                 array['uptime'] = Uptime
                 array['load_1'] = Load_1
